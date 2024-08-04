@@ -1,0 +1,10 @@
+torch
+torchvision
+tqdm
+kaggle
+wandb
+python-dotenv
+scikit-learn
+pandas
+numpy<2
+google-cloud-storage
