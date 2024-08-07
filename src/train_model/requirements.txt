@@ -8,3 +8,4 @@ scikit-learn
 pandas
 numpy<2
 google-cloud-storage
+google-cloud-aiplatform

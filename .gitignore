@@ -175,3 +175,10 @@ cython_debug/
 # ingore data folder
 /data/
 **/data/
+
+# wandb
+wandb/
+wandb/**/*
+
+# models
+models/

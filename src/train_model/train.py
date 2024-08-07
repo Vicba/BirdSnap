@@ -6,11 +6,19 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from sklearn.model_selection import train_test_split
 from data_setup import BirdDataset, create_dataloaders, update_data
+from engine import train
+from model_builder import get_model
+from google.cloud import aiplatform
+import shutil
 
 
 def main(args):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
+
+    if args.device == "cuda" and not torch.cuda.is_available():
+        print("CUDA is not available. Switching to CPU")
+        args.device = "cpu"
 
     print('Starting training...')
     bucket_name = os.getenv('STORAGE_BUCKET')
@@ -18,6 +26,7 @@ def main(args):
     # if args.refresh_data:
     #     update_data(data_dir=args.data_dir, classes=args.classes, bucket_name=bucket_name)    
     #     print("Data setup completed successfully")
+    #     shutil.rmtree(args.data_dir)
 
     print("Data setup completed successfully")
 
@@ -30,7 +39,7 @@ def main(args):
     ])
 
     # Create Dataset
-    dataset = BirdDataset(root_dir=args.data_dir, transform=transform)
+    dataset = BirdDataset(bucket_name=bucket_name, transform=transform)
 
     # get first 5 items from dataset
     print(len(dataset))
@@ -55,7 +64,22 @@ def main(args):
     print(f"Labels batch shape: {train_labels_batch.size()}, {train_labels_batch.shape}")
     print(f"Number of batches: {len(train_dataloader)}")
 
+    # model 
+    model = get_model(num_classes=args.classes).to(args.device)
+        
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
+    model = train(model=model,
+                wandb_project=args.wandb_project,
+                wandb_model_name=args.model_name,
+                train_dataloader=train_dataloader,
+                test_dataloader=test_dataloader,
+                loss_fn=loss_fn,
+                optimizer=optimizer,
+                epochs=args.epochs,
+                save_frequency=args.save_frequency,
+                device=args.device)  
 
 
 
@@ -64,17 +88,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default='data', help='data directory')
     parser.add_argument('--classes', type=int, default=20, help='number of classes')
-    parser.add_argument('--model_dir', type=str, default='model', help='model directory')
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='batch size')
-    parser.add_argument('--model_name', type=str, default='model', help='model name')
-    parser.add_argument('--model_type', type=str, default='resnet', help='model type')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--dropout_rate', type=float, default=0.2, help='dropout rate')
-    parser.add_argument('--embedding_dim', type=int, default=100, help='embedding dimension')
-    parser.add_argument('--hidden_dim', type=int, default=100, help='hidden dimension')
-    parser.add_argument('--num_layers', type=int, default=1, help='number of layers')
+    parser.add_argument('--save-frequency', type=int, default=2, help='save frequency')
     parser.add_argument('--wandb_project', type=str, default='bird-classification', help='wandb project name')
+    parser.add_argument('--model_name', type=str, default='bird-classifier', help='wandb model name')
     parser.add_argument("--refresh_data", action='store_true', help="If set, refresh the data")
     parser.add_argument("--device", type=str, default='cuda', help="Device to train the model")
     parser.add_argument('--seed', type=int, default=42, help='random seed')

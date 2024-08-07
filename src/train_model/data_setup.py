@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from torchvision import transforms
 import random
 from dotenv import load_dotenv
+from io import BytesIO
 
 load_dotenv()
 
@@ -112,38 +113,107 @@ def filter_top_species(data_dir, top_species):
             os.rmdir(root)
 
 class BirdDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.root_dir = root_dir
+    def __init__(self, bucket_name, transform=None):
+        self.bucket_name = bucket_name
         self.transform = transform
         self.image_paths = []
         self.labels = []
         self.class_to_idx = {}
 
-        for idx, class_name in enumerate(os.listdir(root_dir)):
-            class_path = os.path.join(root_dir, class_name)
-            if os.path.isdir(class_path):
-                self.class_to_idx[class_name] = idx
-                for img_name in os.listdir(class_path):
-                    img_path = os.path.join(class_path, img_name)
-                    self.image_paths.append(img_path)
-                    self.labels.append(idx)
+        self.client = storage.Client()
+        self.bucket = self.client.bucket(self.bucket_name)
+        
+        self._load_data()
+
+    def _load_data(self):
+        blobs = list(self.client.list_blobs(self.bucket))
+
+        for blob in blobs:
+            # Skip directories or non-image files if needed
+            if not blob.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                continue
+
+            class_name = os.path.dirname(blob.name).strip('/')
+            img_path = blob.name
+
+            if class_name not in self.class_to_idx:
+                self.class_to_idx[class_name] = len(self.class_to_idx)
+            class_idx = self.class_to_idx[class_name]
+
+            self.image_paths.append(img_path)
+            self.labels.append(class_idx)
+
+        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
 
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        img_path = self.image_paths[idx].replace("\\", "/")
-        label = self.labels[idx]
+        img_path = self.image_paths[idx]
         # print(img_path)
-        image = Image.open(img_path).convert("RGB")
+        label = self.labels[idx]
+
+        blob = self.bucket.blob(img_path)
+        img_bytes = blob.download_as_bytes()
+        image = Image.open(BytesIO(img_bytes)).convert("RGB")
 
         if self.transform:
             image = self.transform(image)
 
         return image, label
-    
+
     def get_idx_to_class(self):
-        return {v: k for k, v in self.class_to_idx.items()}
+        return self.idx_to_class
+
+# class BirdDataset(Dataset):
+#     def __init__(self, root_dir, transform=None):
+#         self.root_dir = root_dir
+#         self.transform = transform
+#         self.image_paths = []
+#         self.labels = []
+#         self.class_to_idx = {}
+
+#         # for idx, class_name in enumerate(os.listdir(root_dir)):
+#         #     class_path = os.path.join(root_dir, class_name)
+#         #     if os.path.isdir(class_path):
+#         #         self.class_to_idx[class_name] = idx
+#         #         for img_name in os.listdir(class_path):
+#         #             img_path = os.path.join(class_path, img_name)
+#         #             self.image_paths.append(img_path)
+#         #             self.labels.append(idx)
+
+#         # root dir is gcp bucket
+#         if root_dir.startswith("gs://"):
+#             storage_client = storage.Client(project=os.getenv('GCP_PROJECT_ID'))
+#             bucket_name = root_dir.split("/")[2]
+#             bucket = storage_client.bucket(bucket_name)
+
+#             blobs = bucket.list_blobs()
+#             for blob in blobs:
+#                 blob_name = blob.name
+#                 class_name = blob_name.split("/")[0]
+#                 if class_name not in self.class_to_idx:
+#                     self.class_to_idx[class_name] = len(self.class_to_idx)
+#                 self.image_paths.append(f"gs://{bucket_name}/{blob_name}")
+#                 self.labels.append(self.class_to_idx[class_name])
+
+
+#     def __len__(self):
+#         return len(self.image_paths)
+
+#     def __getitem__(self, idx):
+#         img_path = self.image_paths[idx].replace("\\", "/")
+#         label = self.labels[idx]
+#         # print(img_path)
+#         image = Image.open(img_path).convert("RGB")
+
+#         if self.transform:
+#             image = self.transform(image)
+
+#         return image, label
+    
+#     def get_idx_to_class(self):
+#         return {v: k for k, v in self.class_to_idx.items()}
     
 
 def create_dataloaders(

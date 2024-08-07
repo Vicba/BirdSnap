@@ -1,0 +1,5 @@
+Flask
+google-cloud-storage
+python-dotenv
+torch
+torchvision

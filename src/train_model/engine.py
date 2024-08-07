@@ -5,6 +5,62 @@ import torch
 import wandb
 from tqdm.auto import tqdm
 from typing import Dict, List, Tuple
+from pathlib import Path
+import os
+from google.cloud import storage
+from dotenv import load_dotenv
+from model_builder import get_model
+
+load_dotenv()
+
+import os
+from pathlib import Path
+import torch
+from google.cloud import storage
+
+def save_model(model: torch.nn.Module, target_dir: str, model_name: str):
+    """Saves a PyTorch model to a target directory and uploads it to GCS.
+
+    Args:
+    model: A target PyTorch model to save.
+    target_dir: A directory for saving the model to.
+    model_name: A filename for the saved model. Should include
+      either ".pth" or ".pt" as the file extension.
+
+    Example usage:
+    save_model(model=model_0,
+               target_dir="models",
+               model_name="resnet.pth")
+    """
+    target_dir_path = Path(target_dir)
+    target_dir_path.mkdir(parents=True, exist_ok=True)
+
+    model_save_path = target_dir_path / model_name
+
+    print(f"[INFO] Saving model to: {model_save_path}")
+    torch.save(model.state_dict(), model_save_path)
+
+    # Upload the model to GCS
+    bucket_name = os.getenv("STORAGE_BUCKET")
+    if not bucket_name:
+        raise ValueError("Environment variable 'STORAGE_BUCKET' not set.")
+
+    gcs_model_save_path = f"models/{model_name}"
+
+    print(f"[INFO] Uploading model to GCS: {gcs_model_save_path}")
+
+    # Initialize the GCS client
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(gcs_model_save_path)
+
+    # Set a larger timeout and use resumable uploads
+    try:
+        blob.upload_from_filename(model_save_path, timeout=600)
+        print(f"[INFO] Model successfully uploaded to GCS: gs://{bucket_name}/{gcs_model_save_path}")
+    except Exception as e:
+        print(f"[ERROR] Upload failed: {e}")
+
 
 
 def train_step(model: torch.nn.Module, 
@@ -131,7 +187,8 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           loss_fn: torch.nn.Module,
           epochs: int,
-          device: torch.device) -> Dict[str, List]:
+          save_frequency: int,
+          device: torch.device) -> Tuple[Dict[str, List], torch.nn.Module]:
     """Trains and tests a PyTorch model.
 
     Passes a target PyTorch models through train_step() and test_step()
@@ -163,6 +220,7 @@ def train(model: torch.nn.Module,
               test_loss: [1.2641, 1.5706],
               test_acc: [0.3400, 0.2973]} 
     """
+    wandb.login(key=os.getenv("WANDB_API_KEY"))
     wandb.init(project=wandb_project, name=wandb_model_name)
 
     results = {"train_loss": [],
@@ -206,6 +264,16 @@ def train(model: torch.nn.Module,
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
 
+        # Save model checkpoint every 2 epochs
+        if (epoch + 1) % save_frequency == 0:
+            checkpoint_name = f"checkpoint_epoch_{epoch+1}.pth"
+            save_model(model=model, target_dir="../../models", model_name=checkpoint_name)
+
     wandb.finish()
 
-    return results
+    return model
+
+
+if __name__ == "__main__":
+    model_0 = get_model(num_classes=20)
+    save_model(model=model_0, target_dir="../../models", model_name="resnet.pth")
