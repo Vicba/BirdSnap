@@ -1,11 +1,8 @@
 import streamlit as st
 import requests
-from PIL import Image
-from io import BytesIO
 
 st.set_page_config(page_title='Simple Bird Classification', layout='wide')
 
-# Replace with the URL where your Flask API is hosted
 FLASK_API_URL = 'http://localhost:5000/predict'
 
 def main():
@@ -13,14 +10,6 @@ def main():
     st.write('This is a simple bird classification app that uses a ResNet18 model trained on 20 different bird types.')
 
     img_input = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-
-    if st.button('Train model'):
-        response = requests.get(f'{FLASK_API_URL}/train')
-        if response.status_code == 200:
-            st.success('Model trained successfully!')
-        else:
-            st.error(f'Error: {response.json().get("error", "Unknown error")}')
-
 
     if img_input is not None:
         col1, col2 = st.columns(2)

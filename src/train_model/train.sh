@@ -12,4 +12,3 @@ python train.py \
     --model_name "bird_classifier" \
     --save_frequency 1 \
     --refresh_data \
-

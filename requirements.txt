@@ -1,0 +1,17 @@
+pytest
+torch
+bandit
+Pillow
+numpy<2
+flask
+google-cloud-storage
+python-dotenv
+torch
+torchvision
+tqdm
+kaggle
+wandb
+scikit-learn
+pandas
+google-cloud-aiplatform
+pylint

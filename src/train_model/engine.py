@@ -40,7 +40,6 @@ def save_model(model: torch.nn.Module, target_dir: str, model_name: str):
     print(f"[INFO] Saving model to: {model_save_path}")
     torch.save(model.state_dict(), model_save_path)
 
-    # Upload the model to GCS
     bucket_name = os.getenv("STORAGE_BUCKET")
     if not bucket_name:
         raise ValueError("Environment variable 'STORAGE_BUCKET' not set.")

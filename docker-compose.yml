@@ -1,0 +1,24 @@
+version: '3.9'
+services:
+  train_model:
+    build:
+      context: ./src/train_model
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./src:/app
+
+  flask:
+    build:
+      context: ./src/flask
+    ports:
+      - "5000:5000"
+    depends_on:
+      - train_model
+
+  streamlit:
+    build:
+      context: ./src/streamlit
+    ports:
+      - "8080:8080"
+    depends_on:
+      - flask

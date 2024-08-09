@@ -163,58 +163,7 @@ class BirdDataset(Dataset):
         return image, label
 
     def get_idx_to_class(self):
-        return self.idx_to_class
-
-# class BirdDataset(Dataset):
-#     def __init__(self, root_dir, transform=None):
-#         self.root_dir = root_dir
-#         self.transform = transform
-#         self.image_paths = []
-#         self.labels = []
-#         self.class_to_idx = {}
-
-#         # for idx, class_name in enumerate(os.listdir(root_dir)):
-#         #     class_path = os.path.join(root_dir, class_name)
-#         #     if os.path.isdir(class_path):
-#         #         self.class_to_idx[class_name] = idx
-#         #         for img_name in os.listdir(class_path):
-#         #             img_path = os.path.join(class_path, img_name)
-#         #             self.image_paths.append(img_path)
-#         #             self.labels.append(idx)
-
-#         # root dir is gcp bucket
-#         if root_dir.startswith("gs://"):
-#             storage_client = storage.Client(project=os.getenv('GCP_PROJECT_ID'))
-#             bucket_name = root_dir.split("/")[2]
-#             bucket = storage_client.bucket(bucket_name)
-
-#             blobs = bucket.list_blobs()
-#             for blob in blobs:
-#                 blob_name = blob.name
-#                 class_name = blob_name.split("/")[0]
-#                 if class_name not in self.class_to_idx:
-#                     self.class_to_idx[class_name] = len(self.class_to_idx)
-#                 self.image_paths.append(f"gs://{bucket_name}/{blob_name}")
-#                 self.labels.append(self.class_to_idx[class_name])
-
-
-#     def __len__(self):
-#         return len(self.image_paths)
-
-#     def __getitem__(self, idx):
-#         img_path = self.image_paths[idx].replace("\\", "/")
-#         label = self.labels[idx]
-#         # print(img_path)
-#         image = Image.open(img_path).convert("RGB")
-
-#         if self.transform:
-#             image = self.transform(image)
-
-#         return image, label
-    
-#     def get_idx_to_class(self):
-#         return {v: k for k, v in self.class_to_idx.items()}
-    
+        return self.idx_to_class    
 
 def create_dataloaders(
     train_data: BirdDataset,

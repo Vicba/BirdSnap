@@ -8,6 +8,7 @@ from google.cloud import storage
 from io import BytesIO
 from utils import bird_names
 from dotenv import load_dotenv
+import subprocess
 
 load_dotenv()
 
@@ -15,6 +16,7 @@ app = Flask(__name__)
 
 num_classes = 20
 bucket_name = os.getenv("STORAGE_BUCKET")
+project_id = os.getenv("GCP_PROJECT_ID")
 model_dir = 'models'
 
 def create_model():
@@ -26,7 +28,7 @@ def create_model():
 
 def get_model():
     """Get the last .pth model checkpoint from Google Cloud Storage"""
-    client = storage.Client()
+    client = storage.Client(project=project_id)
     bucket = client.bucket(bucket_name)
     
     blobs = bucket.list_blobs(prefix=model_dir)
@@ -102,4 +104,4 @@ def predict_route():
             return jsonify({'error': 'Model not found'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, host='0.0.0.0')

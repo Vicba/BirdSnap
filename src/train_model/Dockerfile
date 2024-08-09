@@ -1,9 +1,7 @@
-FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
+FROM python:3.9-slim
 
 WORKDIR /
 
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
-
-ENTRYPOINT ["bash", "train.sh"]
