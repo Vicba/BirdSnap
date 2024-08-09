@@ -2,7 +2,7 @@
 
 This project is a simple bird classification model (CNN) trained on a kaggle dataset. It also has a streamlit and flask app to serve the model. The data and models are stored in google cloud storage.
 
-The initial idea was to train and serve the model in vertexai but because it will cost too much, I decided to train in locally and therefore reduced the dataset a lot. Only on 20 different bird types from the 525. You can find the script to train and deploy using the terminal still in [vertexai train and deploy script](./scripts/train_and_deploy.sh)
+The initial idea was to train and serve the model in gcp vertexai but because it will cost too much, I decided to train it locally. Therefore I reduced the dataset a lot by using only 20 different bird types from the 525. If you ^still want to use vertexai, you can find the script to train and deploy using the terminal in [vertexai train and deploy script](./scripts/train_and_deploy.sh)
 
 However if you want to do more you can specify it as a parameter in the train command below. You can find the [ML canvas](./USE_CASE.md) with more information about the model use case on this link.
 
