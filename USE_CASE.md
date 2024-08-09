@@ -74,10 +74,3 @@
 
 - **Technique:**  
   Utilize deep learning, specifically convolutional neural networks (CNNs), to achieve high accuracy in bird species identification.
-
----
-
-#### **Inference**
-
-- **System:**  
-  An online inference system for real-time bird species identification, providing instant feedback on uploaded images.

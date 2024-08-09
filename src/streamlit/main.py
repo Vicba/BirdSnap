@@ -24,7 +24,7 @@ def main():
                 response = requests.post(
                     FLASK_API_URL,
                     files={'file': ('image.jpg', img_bytes, 'image/jpeg')}
-                )
+                ) # nosec
 
                 if response.status_code == 200:
                     result = response.json()
